@@ -1,9 +1,8 @@
 import React, { Component } from "react"
+import { connect } from "react-redux"
+import { signIn, signOut } from "../actions"
 
 class GoogleAuth extends Component {
-    state = {
-        isSignedIn: null
-    }
 
     componentDidMount = () => {
         window.gapi.load("client:auth2", () => {
@@ -11,40 +10,47 @@ class GoogleAuth extends Component {
                 clientId: "159628228181-fdl60fq592tl2cbj234k51e40qis2lpg.apps.googleusercontent.com",
                 scope: "email"
             })
-            .then(() => {
-                this.auth = window.gapi.auth2.getAuthInstance()
-                this.setState({isSignedIn: this.auth.isSignedIn.get()})
-                this.auth.isSignedIn.listen(this.onAuthChange)
-            })
+                .then(() => {
+                    console.log("client initiated")
+                    this.auth = window.gapi.auth2.getAuthInstance()
+                    this.onAuthChange(this.auth.isSignedIn.get())
+                    this.auth.isSignedIn.listen(this.onAuthChange)
+                })
         })
     }
 
-    onAuthChange = () => {
-        this.setState({isSignedIn: this.auth.isSignedIn.get()})
+    onAuthChange = isSignedIn => {
+        console.log(isSignedIn)
+        console.log(this.props)
+        if (isSignedIn) {
+            this.props.signIn()
+        } else {
+            this.props.signOut()
+        }
     }
 
-    onSignIn = () => {
+    onSignInClick = () => {
         this.auth.signIn()
     }
 
-    onSignOut = () => {
+    onSignOutClick = () => {
         this.auth.signOut()
     }
-    
-    renderAuthButton = () => {
-        if (this.state.isSignedIn === null) {
+
+    renderAuthButton() {
+        if (this.props.isSignedIn === null) {
             return null
-        } else if (this.state.isSignedIn) {
-            return(
-                <button onClick={this.onSignOut} className="ui red google button">
+        } else if (this.props.isSignedIn) {
+            return (
+                <button onClick={this.onSignOutClick} className="ui red google button">
                     <i className="google icon" />
-                    Sign Out    
+                    Sign Out
                 </button>
 
             )
         } else {
-            return(
-                <button onClick={this.onSignIn} className="ui red google button">
+            return (
+                <button onClick={this.onSignInClick} className="ui red google button">
                     <i className="google icon" />
                     Sign in with Google
                 </button>
@@ -53,10 +59,14 @@ class GoogleAuth extends Component {
     }
 
     render() {
-        return(
+        return (
             <div>{this.renderAuthButton()}</div>
         )
     }
 }
 
-export default GoogleAuth
+const mapStateToProps = state => {
+    return { isSignedIn: state.auth.isSignedIn }
+}
+
+export default connect(mapStateToProps, { signIn, signOut })(GoogleAuth)
